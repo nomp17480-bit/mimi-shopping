@@ -46,8 +46,9 @@ export default function StorefrontCatalog({products,rates,whatsapp,categories}:{
   finally{setLoading(false)}
  }
  return <>
+  <div className="catalog-tools"><label className="catalog-search"><span>⌕</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="ابحثي عن حقيبتك..." aria-label="البحث عن منتج"/></label><div className="category-filters"><button type="button" className={categoryFilter==="all"?"active":""} onClick={()=>setCategoryFilter("all")}>الكل</button>{categories.map(category=><button type="button" key={category.id} className={categoryFilter===String(category.id)?"active":""} onClick={()=>setCategoryFilter(String(category.id))}>{category.icon||""} {category.name}</button>)}</div></div>
   <div className="product-grid">
-   {products.map(product=>{const selected=product.variants.find(v=>v.id===choices[product.id])??product.variants[0];const available=product.variants.length?selected?.stock??0:product.stock;return <article className="product-card" key={product.id}>
+   {visibleProducts.map(product=>{const selected=product.variants.find(v=>v.id===choices[product.id])??product.variants[0];const available=product.variants.length?selected?.stock??0:product.stock;return <article className="product-card" key={product.id}>
     <div className="product-image">{imageList(product.images).length?<img src={imageList(product.images)[0]} alt={product.name} loading="lazy" onError={e=>e.currentTarget.parentElement?.classList.add("image-failed")}/>:<div className="image-placeholder"><span>M</span><small>صورة المنتج قريباً</small></div>}<span className="product-tag">MIMI PICK</span>{available<1?<span className="stock-tag">نفد المخزون</span>:null}</div>
     <div className="product-info"><h3>{product.name}</h3>{product.description?<p>{product.description}</p>:null}
      {product.variants.length?<div className="variant-select"><label>اللون / المقاس</label><select value={selected?.id??""} onChange={e=>setChoices(old=>({...old,[product.id]:Number(e.target.value)}))}>{product.variants.map(v=><option key={v.id} value={v.id}>{[v.color,v.size].filter(Boolean).join(" / ")||"الخيار"} — {v.stock} متوفر</option>)}</select></div>:null}
