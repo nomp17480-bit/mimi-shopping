@@ -3,7 +3,11 @@ import "./globals.css";
 import "./andalusian.css";
 import "./mimi-redesign.css";
 
-const siteUrl = "https://delightful-marshmallow-50e91e.netlify.app";
+const productionUrl = "https://delightful-marshmallow-50e91e.netlify.app";
+const siteUrl =
+  process.env.VERCEL_ENV === "preview" && process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : productionUrl;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -19,7 +23,14 @@ export const metadata: Metadata = {
     title: "حقائب وأناقة بطابع جزائري | Mimi Shopping",
     description:
       "اكتشفي تشكيلة Mimi Shopping من الحقائب الأنيقة بلمسة جزائرية.",
-    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "Mimi Shopping - حقائب وأناقة بطابع جزائري" }],
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Mimi Shopping - حقائب وأناقة بطابع جزائري",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
@@ -29,7 +40,9 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="ar" dir="rtl">
       <body>{children}</body>
