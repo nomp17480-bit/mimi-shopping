@@ -117,3 +117,40 @@ export async function updateShippingRate(form: FormData) {
  revalidatePath("/admin/shipping"); revalidatePath("/");
  redirect("/admin/shipping?updated=1");
 }
+
+export async function updateCategory(form: FormData) {
+ const supabase=await requireRole(catalogRoles),id=Number(text(form,"id"));
+ const name=text(form,"name"),slug=text(form,"slug").toLowerCase().replace(/[^a-z0-9-]/g,"-").replace(/-+/g,"-");
+ if(!Number.isInteger(id)||id<=0||!name||!slug)throw new Error("بيانات القسم غير صالحة.");
+ const {error}=await supabase.from("categories").update({name,slug,icon:text(form,"icon")||"👜"}).eq("id",id);
+ if(error)throw new Error("تعذر تحديث القسم: "+error.message);
+ revalidatePath("/admin");revalidatePath("/");
+ redirect("/admin?categoryUpdated=1");
+}
+export async function deleteCategory(form: FormData) {
+ const supabase=await requireRole(catalogRoles),id=Number(text(form,"id"));
+ if(!Number.isInteger(id)||id<=0)throw new Error("معرّف القسم غير صالح.");
+ const {error}=await supabase.from("categories").delete().eq("id",id);
+ if(error)throw new Error("تعذر حذف القسم: "+error.message);
+ revalidatePath("/admin");revalidatePath("/");
+ redirect("/admin?categoryDeleted=1");
+}
+export async function createAdminUser(form: FormData) {
+ const supabase=await requireRole(["owner"]),userId=text(form,"user_id"),role=text(form,"role");
+ if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)||!["admin","catalog","orders","support"].includes(role))throw new Error("معرّف المستخدم أو الصلاحية غير صالحة.");
+ const {error}=await supabase.from("admin_users").insert({user_id:userId,role});
+ if(error)throw new Error("تعذر إضافة المدير. تأكد أن المستخدم موجود في Auth: "+error.message);
+ revalidatePath("/admin/team");
+ redirect("/admin/team?created=1");
+}
+export async function deleteAdminUser(form: FormData) {
+ const supabase=await requireRole(["owner"]),id=Number(text(form,"id"));
+ const {data:{user}}=await supabase.auth.getUser();
+ if(!Number.isInteger(id)||id<=0)throw new Error("معرّف المدير غير صالح.");
+ const {data:target}=await supabase.from("admin_users").select("user_id,role").eq("id",id).maybeSingle();
+ if(!target||target.user_id===user?.id||target.role==="owner")throw new Error("لا يمكن حذف حساب المالك أو حسابك الحالي.");
+ const {error}=await supabase.from("admin_users").delete().eq("id",id);
+ if(error)throw new Error("تعذر حذف المدير: "+error.message);
+ revalidatePath("/admin/team");
+ redirect("/admin/team?deleted=1");
+}
