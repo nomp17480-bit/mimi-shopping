@@ -29,16 +29,19 @@ The checkout RPC is public-callable so the storefront can submit COD orders with
 
 The original combined migration is retained at `supabase/migrations/202611140005_harden_public_checkout.sql`. The mobile-friendly scripts are retained under `supabase/manual/` as an execution record. They are not pending work.
 
-## Current shipping setup
+## Shipping-rate setup — prepared, not yet applied
 
-Shipping rows are prepared with zero prices and inactive status. This is intentional until verified courier prices are available.
+The owner approved these prices:
+- Wilaya 16 (Algiers): **350 DZD**.
+- All other 68 wilayas: **700 DZD**.
+- Same fee for home and desk delivery.
+- All 69 wilayas active.
 
-From **لوحة الإدارة → أسعار التوصيل**:
-- Enter the real home-delivery fee.
-- Enter the real desk-delivery fee.
-- Activate only the wilayas and delivery methods the store can actually serve.
+The one-time script `supabase/manual/006-configure-shipping-rates.sql` upserts these rates only. It does not touch products, orders, stock, or users. Run it once in the SQL Editor of the Mimi Shopping Supabase project, inspect the returned 69 rows, then confirm the same values in **لوحة الإدارة → أسعار التوصيل**.
 
-Do not use estimated prices. The storefront may display both delivery choices, but the database must block checkout when the selected fee is unavailable or zero.
+The admin page already supports editing each wilaya's home and desk prices and activation status later, without changing application code.
+
+Do not rerun the completed bootstrap, activation, role policy, or 005 scripts.
 
 ## Roles and access
 
@@ -57,9 +60,9 @@ Cash on delivery is the only enabled payment method. Online payment is not confi
 
 ## Remaining release work
 
-The database hardening itself is complete. Before Production:
-1. Enter verified delivery rates.
-2. Run one controlled COD order after explicit approval, then verify the saved order and stock update.
-3. Keep the current Preview deployment until the application and domain are approved for release.
+1. Apply and verify the approved shipping rates.
+2. Connect and verify the Netlify deployment.
+3. Run one controlled COD order only after explicit approval, then verify the saved order and stock update.
+4. Keep Production disabled until the storefront and deployment are reviewed.
 
 Do not delete or rewrite existing products, orders, variants, stock, or settings as part of routine validation.
