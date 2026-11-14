@@ -71,3 +71,30 @@ export async function updateOrder(form: FormData) {
   revalidatePath("/admin/orders"); revalidatePath("/admin");
   redirect("/admin/orders?updated=1");
 }
+export async function createVariant(form: FormData) {
+  const supabase = await requireRole(catalogRoles);
+  const productId = Number(text(form,"product_id")), color = text(form,"color"), size = text(form,"size");
+  const stock = Number(text(form,"stock")), rawPrice = text(form,"price_override"), price = rawPrice ? Number(rawPrice) : null;
+  if (!Number.isInteger(productId) || productId <= 0 || !Number.isInteger(stock) || stock < 0 || (price !== null && (!Number.isFinite(price) || price < 0))) throw new Error("تحقق من المنتج والمخزون والسعر.");
+  const {error} = await supabase.from("product_variants").insert({product_id:productId,color,size,stock,price_override:price,sku:text(form,"sku")||null,is_active:form.get("is_active")==="on"});
+  if (error) throw new Error("تعذرت إضافة تركيبة المخزون: "+error.message);
+  revalidatePath("/admin/inventory"); revalidatePath("/admin");
+  redirect("/admin/inventory?created=1");
+}
+export async function updateVariant(form: FormData) {
+  const supabase = await requireRole(catalogRoles), id=Number(text(form,"id"));
+  const stock=Number(text(form,"stock")), rawPrice=text(form,"price_override"), price=rawPrice?Number(rawPrice):null;
+  if (!Number.isInteger(id)||id<=0||!Number.isInteger(stock)||stock<0||(price!==null&&(!Number.isFinite(price)||price<0))) throw new Error("بيانات المخزون غير صالحة.");
+  const {error}=await supabase.from("product_variants").update({color:text(form,"color"),size:text(form,"size"),stock,price_override:price,sku:text(form,"sku")||null,is_active:form.get("is_active")==="on"}).eq("id",id);
+  if(error) throw new Error("تعذر تحديث المخزون: "+error.message);
+  revalidatePath("/admin/inventory"); revalidatePath("/admin");
+  redirect("/admin/inventory?updated=1");
+}
+export async function deleteVariant(form: FormData) {
+  const supabase=await requireRole(catalogRoles),id=Number(text(form,"id"));
+  if(!Number.isInteger(id)||id<=0) throw new Error("معرّف المخزون غير صالح.");
+  const {error}=await supabase.from("product_variants").delete().eq("id",id);
+  if(error) throw new Error("تعذر حذف التركيبة: "+error.message);
+  revalidatePath("/admin/inventory"); revalidatePath("/admin");
+  redirect("/admin/inventory?deleted=1");
+}
