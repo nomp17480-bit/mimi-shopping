@@ -1591,7 +1591,7 @@ begin
   if length(trim(coalesce(p_customer_name,''))) < 2 or length(trim(p_customer_name)) > 120 then
     raise exception 'يرجى إدخال اسم صحيح.';
   end if;
-  if length(regexp_replace(coalesce(p_phone,''),'[^0-9]','','g')) < 8 or length(p_phone) > 30 or p_phone !~ '^[+0-9 ()-]+
+  if length(regexp_replace(coalesce(p_phone,''),'[^0-9]','','g')) < 8 or length(p_phone) > 30 or p_phone ~ '[^+0-9 ()-]' then
     raise exception 'رقم الهاتف غير صالح.';
   end if;
   if length(trim(coalesce(p_wilaya,''))) = 0 or length(trim(coalesce(p_commune,''))) = 0 or length(trim(coalesce(p_address,''))) < 4 or length(p_address) > 500 then
