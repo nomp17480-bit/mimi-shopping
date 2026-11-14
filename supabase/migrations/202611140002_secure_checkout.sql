@@ -52,7 +52,7 @@ begin
   if coalesce(p_payment_method,'') <> 'cod' then
     raise exception 'الدفع الإلكتروني غير مفعل بعد؛ اختر الدفع عند الاستلام.';
   end if;
-  if jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) < 1 or jsonb_array_length(p_items) > 20 then
+  if coalesce(jsonb_typeof(p_items),'') <> 'array' or jsonb_array_length(p_items) < 1 or jsonb_array_length(p_items) > 20 then
     raise exception 'السلة فارغة أو تحتوي على عدد كبير من المنتجات.';
   end if;
   if (select count(*) from public.orders where phone = trim(p_phone) and created_at > now() - interval '10 minutes') >= 3 then
