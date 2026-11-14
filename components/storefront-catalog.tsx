@@ -29,10 +29,10 @@ export default function StorefrontCatalog({products,rates}:{products:Product[];r
   event.preventDefault();setMessage("");setConfirmed("");
   if(!cart.length){setMessage("السلة فارغة.");return}
   if(!selectedRate){setMessage("اختر ولاية يتوفر فيها التوصيل.");return}
-  const form=new FormData(event.currentTarget);
+  const formElement=event.currentTarget; const form=new FormData(formElement);
   const payload={customer_name:String(form.get("customer_name")??""),phone:String(form.get("phone")??""),wilaya,commune:String(form.get("commune")??""),address:String(form.get("address")??""),shipping_method:method,payment_method:"cod",customer_note:String(form.get("customer_note")??""),items:cart.map(x=>({product_id:x.product_id,variant_id:x.variant_id,quantity:x.quantity}))};
   setLoading(true);
-  try{const response=await fetch("/api/checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});const result=await response.json();if(!response.ok)throw new Error(result.error||"تعذر تسجيل الطلب.");setConfirmed(result.order?.order_number??"تم تسجيل طلبك");setCart([]);event.currentTarget.reset();setMessage("")}
+  try{const response=await fetch("/api/checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});const result=await response.json();if(!response.ok)throw new Error(result.error||"تعذر تسجيل الطلب.");setConfirmed(result.order?.order_number??"تم تسجيل طلبك");setCart([]);formElement.reset();setMessage("")}
   catch(error){setMessage(error instanceof Error?error.message:"حدث خطأ غير متوقع.")}
   finally{setLoading(false)}
  }
