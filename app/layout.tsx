@@ -11,7 +11,7 @@ const siteUrl =
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: "حقائب وأناقة بطابع جزائري | Mimi Shopping",
+  title: "أناقة وحقائب | Mimi Shopping",
   description:
     "اكتشفي تشكيلة Mimi Shopping من الحقائب الأنيقة بلمسة جزائرية. أناقة وتفاصيل مختارة، مع توصيل عبر الولايات حسب المناطق المفعّلة.",
   applicationName: "Mimi Shopping",
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     url: siteUrl,
     siteName: "Mimi Shopping",
     locale: "ar_DZ",
-    title: "حقائب وأناقة بطابع جزائري | Mimi Shopping",
+    title: "أناقة وحقائب | Mimi Shopping",
     description:
       "اكتشفي تشكيلة Mimi Shopping من الحقائب الأنيقة بلمسة جزائرية.",
     images: [
@@ -28,13 +28,13 @@ export const metadata: Metadata = {
         url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "Mimi Shopping - حقائب وأناقة بطابع جزائري",
+        alt: "Mimi Shopping - أناقة وحقائب",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "حقائب وأناقة بطابع جزائري | Mimi Shopping",
+    title: "أناقة وحقائب | Mimi Shopping",
     description: "اكتشفي تشكيلة Mimi Shopping من الحقائب الأنيقة بلمسة جزائرية.",
     images: ["/opengraph-image"],
   },
