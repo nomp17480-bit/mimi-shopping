@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "../../lib/supabase/server";
 import { createProduct, updateProduct, deleteProduct, createCategory } from "./actions";
+import ProductImageUploader from "../../components/product-image-uploader";
 
 type Product = {
   id: number; name: string; price: number; old_price: number | null; stock: number;
