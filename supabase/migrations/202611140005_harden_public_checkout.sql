@@ -1591,13 +1591,19 @@ begin
   if length(trim(coalesce(p_customer_name,''))) < 2 or length(trim(p_customer_name)) > 120 then
     raise exception 'يرجى إدخال اسم صحيح.';
   end if;
-  if length(regexp_replace(coalesce(p_phone,''),'[^0-9+]','','g')) < 8 or length(p_phone) > 30 then
+  if length(regexp_replace(coalesce(p_phone,''),'[^0-9]','','g')) < 8 or length(p_phone) > 30 or p_phone !~ '^[+0-9 ()-]+
     raise exception 'رقم الهاتف غير صالح.';
   end if;
-  if length(trim(coalesce(p_wilaya,''))) = 0 or length(trim(coalesce(p_commune,''))) = 0 or length(trim(coalesce(p_address,''))) < 4 or length(trim(p_address)) > 500 then
-    raise exception 'يرجى إكمال الولاية والبلدية والعنوان بشكل صحيح.';
+  if length(trim(coalesce(p_wilaya,''))) = 0 or length(trim(coalesce(p_commune,''))) = 0 or length(trim(coalesce(p_address,''))) < 4 or length(p_address) > 500 then
+    raise exception 'يرجى إكمال الولاية والبلدية والعنوان.';
   end if;
-  if p_phone !~ '^[0-9+() .-]+
+  if not exists (
+    select 1 from public.store_communes c
+    where (c.wilaya_code || ' - ' || c.wilaya_name) = trim(p_wilaya)
+      and c.commune_name = trim(p_commune)
+  ) then
+    raise exception 'الولاية أو البلدية غير صحيحة.';
+  end if;
   if length(coalesce(p_customer_note,'')) > 1000 then
     raise exception 'الملاحظة طويلة جداً.';
   end if;
@@ -1619,8 +1625,8 @@ begin
     into v_shipping
   from public.shipping_rates
   where wilaya = trim(p_wilaya) and active = true;
-  if not found or v_shipping is null or v_shipping <= 0 then
-    raise exception 'التوصيل غير متاح لهذه الولاية أو طريقة التوصيل حالياً.';
+  if not found or coalesce(v_shipping,0) <= 0 then
+    raise exception 'التوصيل غير متاح لهذه الولاية حالياً.';
   end if;
 
   for v_item in select value from jsonb_array_elements(p_items)
@@ -1703,15 +1709,17 @@ begin
 
   return jsonb_build_object('order_id',v_order_id,'order_number',v_order_number,'subtotal',v_subtotal,'shipping_fee',v_shipping,'total',v_total);
 end;
-$$; then
+$$;
+
+revoke all on function public.place_public_order(text,text,text,text,text,text,text,text,jsonb) from public;
+grant execute on function public.place_public_order(text,text,text,text,text,text,text,text,jsonb) to anon, authenticated;
+
+commit;
+ then
     raise exception 'رقم الهاتف غير صالح.';
   end if;
-  if not exists (
-    select 1 from public.store_communes c
-    where (c.wilaya_code || ' - ' || c.wilaya_name) = trim(p_wilaya)
-      and c.commune_name = trim(p_commune)
-  ) then
-    raise exception 'الولاية أو البلدية غير صحيحة.';
+  if length(trim(coalesce(p_wilaya,''))) = 0 or length(trim(coalesce(p_commune,''))) = 0 or length(trim(coalesce(p_address,''))) < 4 then
+    raise exception 'يرجى إكمال الولاية والبلدية والعنوان.';
   end if;
   if length(coalesce(p_customer_note,'')) > 1000 then
     raise exception 'الملاحظة طويلة جداً.';
