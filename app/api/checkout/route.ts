@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "../../../lib/supabase/server";
+import locationData from "../../../data/algeria-locations.json";
 
 const MAX_BODY_BYTES = 24 * 1024;
 
@@ -50,12 +51,22 @@ export async function POST(request: Request) {
       return jsonError("السلة فارغة أو تحتوي على عدد كبير من المنتجات.", 400);
     }
 
+    const wilaya = typeof input.wilaya === "string" ? input.wilaya.trim() : "";
+    const commune = typeof input.commune === "string" ? input.commune.trim() : "";
+    const selectedWilaya = locationData.wilayas.find((item) => item.name === wilaya);
+    const validCommune = selectedWilaya && locationData.communes.some(
+      (item) => item.wilayaCode === selectedWilaya.code && item.name === commune
+    );
+    if (!selectedWilaya || !validCommune) {
+      return jsonError("الولاية أو البلدية غير صحيحة. اخترهما من القائمتين.", 400);
+    }
+
     const supabase = await createSupabaseServerClient();
     const { data, error } = await supabase.rpc("place_public_order", {
       p_customer_name: typeof input.customer_name === "string" ? input.customer_name : "",
       p_phone: typeof input.phone === "string" ? input.phone : "",
-      p_wilaya: typeof input.wilaya === "string" ? input.wilaya : "",
-      p_commune: typeof input.commune === "string" ? input.commune : "",
+      p_wilaya: wilaya,
+      p_commune: commune,
       p_address: typeof input.address === "string" ? input.address : "",
       p_shipping_method: typeof input.shipping_method === "string" ? input.shipping_method : "",
       p_payment_method: typeof input.payment_method === "string" ? input.payment_method : "",
