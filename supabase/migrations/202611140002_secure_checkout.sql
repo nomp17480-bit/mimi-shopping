@@ -45,7 +45,7 @@ begin
   if p_shipping_method not in ('home','desk') then
     raise exception 'طريقة التوصيل غير صالحة.';
   end if;
-  if p_payment_method <> 'cod' then
+  if coalesce(p_payment_method,'') <> 'cod' then
     raise exception 'الدفع الإلكتروني غير مفعل بعد؛ اختر الدفع عند الاستلام.';
   end if;
   if jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) < 1 or jsonb_array_length(p_items) > 20 then
