@@ -110,9 +110,10 @@ export async function initializeWilayas() {
 }
 export async function updateShippingRate(form: FormData) {
  const supabase=await requireRole(catalogRoles),id=Number(text(form,"id"));
- const home=Number(text(form,"home_price")),desk=Number(text(form,"desk_price"));
+ const home=Number(text(form,"home_price")),desk=Number(text(form,"desk_price")),active=form.get("active")==="on";
  if(!Number.isInteger(id)||id<=0||!Number.isFinite(home)||home<0||!Number.isFinite(desk)||desk<0) throw new Error("أسعار التوصيل غير صالحة.");
- const {error}=await supabase.from("shipping_rates").update({home_price:home,desk_price:desk,active:form.get("active")==="on"}).eq("id",id);
+ if(active&&(home<=0||desk<=0)) throw new Error("لا يمكن تفعيل الولاية قبل إدخال سعر صحيح للتوصيل إلى المنزل والمكتب.");
+ const {error}=await supabase.from("shipping_rates").update({home_price:home,desk_price:desk,active}).eq("id",id);
  if(error) throw new Error("تعذر حفظ أسعار التوصيل: "+error.message);
  revalidatePath("/admin/shipping"); revalidatePath("/");
  redirect("/admin/shipping?updated=1");
