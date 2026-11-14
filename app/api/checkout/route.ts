@@ -53,7 +53,7 @@ export async function POST(request: Request) {
 
     const wilaya = typeof input.wilaya === "string" ? input.wilaya.trim() : "";
     const commune = typeof input.commune === "string" ? input.commune.trim() : "";
-    const selectedWilaya = locationData.wilayas.find((item) => item.name === wilaya);
+    const selectedWilaya = locationData.wilayas.find((item) => `${item.code} - ${item.name}` === wilaya);
     const validCommune = selectedWilaya && locationData.communes.some(
       (item) => item.wilayaCode === selectedWilaya.code && item.name === commune
     );
