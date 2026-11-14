@@ -98,3 +98,22 @@ export async function deleteVariant(form: FormData) {
   revalidatePath("/admin/inventory"); revalidatePath("/admin");
   redirect("/admin/inventory?deleted=1");
 }
+
+const wilayas = ["أدرار","الشلف","الأغواط","أم البواقي","باتنة","بجاية","بسكرة","بشار","البليدة","البويرة","تمنراست","تبسة","تلمسان","تيارت","تيزي وزو","الجزائر","الجلفة","جيجل","سطيف","سعيدة","سكيكدة","سيدي بلعباس","عنابة","قالمة","قسنطينة","المدية","مستغانم","المسيلة","معسكر","ورقلة","وهران","البيض","إليزي","برج بوعريريج","بومرداس","الطارف","تندوف","تيسمسيلت","الوادي","خنشلة","سوق أهراس","تيبازة","ميلة","عين الدفلى","النعامة","عين تموشنت","غرداية","غليزان","تيميمون","برج باجي مختار","أولاد جلال","بني عباس","عين صالح","عين قزام","تقرت","جانت","المغير","المنيعة"];
+export async function initializeWilayas() {
+ const supabase=await requireRole(catalogRoles);
+ const rows=wilayas.map((wilaya,i)=>({wilaya:String(i+1).padStart(2,"0")+" - "+wilaya,home_price:0,desk_price:0,active:true}));
+ const {error}=await supabase.from("shipping_rates").upsert(rows,{onConflict:"wilaya",ignoreDuplicates:true});
+ if(error) throw new Error("تعذر تجهيز الولايات: "+error.message);
+ revalidatePath("/admin/shipping");
+ redirect("/admin/shipping?initialized=1");
+}
+export async function updateShippingRate(form: FormData) {
+ const supabase=await requireRole(catalogRoles),id=Number(text(form,"id"));
+ const home=Number(text(form,"home_price")),desk=Number(text(form,"desk_price"));
+ if(!Number.isInteger(id)||id<=0||!Number.isFinite(home)||home<0||!Number.isFinite(desk)||desk<0) throw new Error("أسعار التوصيل غير صالحة.");
+ const {error}=await supabase.from("shipping_rates").update({home_price:home,desk_price:desk,active:form.get("active")==="on"}).eq("id",id);
+ if(error) throw new Error("تعذر حفظ أسعار التوصيل: "+error.message);
+ revalidatePath("/admin/shipping"); revalidatePath("/");
+ redirect("/admin/shipping?updated=1");
+}
