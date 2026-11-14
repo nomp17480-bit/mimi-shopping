@@ -1,24 +1,74 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "../../../lib/supabase/server";
 
+const MAX_BODY_BYTES = 24 * 1024;
+
+function jsonError(message: string, status: number) {
+  return NextResponse.json({ error: message }, {
+    status,
+    headers: { "Cache-Control": "no-store" },
+  });
+}
+
 export async function POST(request: Request) {
+  const contentType = request.headers.get("content-type") ?? "";
+  if (!contentType.toLowerCase().includes("application/json")) {
+    return jsonError("نوع الطلب غير صالح.", 415);
+  }
+
+  const contentLength = Number(request.headers.get("content-length") ?? 0);
+  if (contentLength > MAX_BODY_BYTES) {
+    return jsonError("بيانات الطلب أكبر من الحجم المسموح.", 413);
+  }
+
+  // Browser checkout is same-origin. Reject cross-site submissions when an Origin is present.
+  const origin = request.headers.get("origin");
+  if (origin) {
+    try {
+      if (new URL(origin).origin !== new URL(request.url).origin) {
+        return jsonError("مصدر الطلب غير مسموح.", 403);
+      }
+    } catch {
+      return jsonError("مصدر الطلب غير صالح.", 403);
+    }
+  }
+
   try {
-    const body = await request.json();
+    const raw = await request.text();
+    if (new TextEncoder().encode(raw).byteLength > MAX_BODY_BYTES) {
+      return jsonError("بيانات الطلب أكبر من الحجم المسموح.", 413);
+    }
+
+    const body: unknown = JSON.parse(raw);
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return jsonError("بيانات الطلب غير صالحة.", 400);
+    }
+
+    const input = body as Record<string, unknown>;
+    const items = Array.isArray(input.items) ? input.items : [];
+    if (items.length < 1 || items.length > 20) {
+      return jsonError("السلة فارغة أو تحتوي على عدد كبير من المنتجات.", 400);
+    }
+
     const supabase = await createSupabaseServerClient();
     const { data, error } = await supabase.rpc("place_public_order", {
-      p_customer_name: String(body.customer_name ?? ""),
-      p_phone: String(body.phone ?? ""),
-      p_wilaya: String(body.wilaya ?? ""),
-      p_commune: String(body.commune ?? ""),
-      p_address: String(body.address ?? ""),
-      p_shipping_method: String(body.shipping_method ?? "home"),
-      p_payment_method: String(body.payment_method ?? "cod"),
-      p_customer_note: String(body.customer_note ?? ""),
-      p_items: Array.isArray(body.items) ? body.items : [],
+      p_customer_name: typeof input.customer_name === "string" ? input.customer_name : "",
+      p_phone: typeof input.phone === "string" ? input.phone : "",
+      p_wilaya: typeof input.wilaya === "string" ? input.wilaya : "",
+      p_commune: typeof input.commune === "string" ? input.commune : "",
+      p_address: typeof input.address === "string" ? input.address : "",
+      p_shipping_method: typeof input.shipping_method === "string" ? input.shipping_method : "",
+      p_payment_method: typeof input.payment_method === "string" ? input.payment_method : "",
+      p_customer_note: typeof input.customer_note === "string" ? input.customer_note : "",
+      p_items: items,
     });
-    if (error) return NextResponse.json({ error: error.message }, { status: 400 });
-    return NextResponse.json({ order: data }, { status: 201 });
+
+    if (error) return jsonError("تعذر تسجيل الطلب. تحقق من البيانات وحاول مجدداً.", 400);
+    return NextResponse.json({ order: data }, {
+      status: 201,
+      headers: { "Cache-Control": "no-store" },
+    });
   } catch {
-    return NextResponse.json({ error: "تعذر إرسال الطلب. تحقق من البيانات وحاول مجدداً." }, { status: 400 });
+    return jsonError("تعذر إرسال الطلب. تحقق من البيانات وحاول مجدداً.", 400);
   }
 }
