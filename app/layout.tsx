@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./andalusian.css";
 
 export const metadata: Metadata = {
   title: "Mimi Shopping | أناقتك تبدأ من هنا",
