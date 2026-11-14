@@ -38,7 +38,7 @@ The checkout RPC is callable by the public browser role so the website can submi
 - Requires a selected active color/size variant whenever a product has variants.
 - Rejects delivery methods whose configured fee is zero or unavailable.
 
-**Action required:** run `supabase/migrations/202611140005_harden_public_checkout.sql` once in the Supabase SQL Editor before accepting real customer orders. It creates the private location reference table and replaces the checkout function; it does not delete or rewrite existing orders, products, variants, or stock. Do not run it more than once unless a later migration explicitly instructs you to do so. The migration is committed to GitHub but has not yet been applied to the live Supabase database.
+**Action required:** on mobile, use the smaller scripts in `supabase/manual/` in numeric order, steps `005-step-01` through `005-step-09`, running each file once in the Supabase SQL Editor. The original combined migration remains at `supabase/migrations/202611140005_harden_public_checkout.sql` for desktop use. The split scripts are safe to apply in order: commune inserts use `ON CONFLICT DO NOTHING`, and the final step replaces the checkout function. They do not delete or rewrite existing orders, products, variants, or stock. The update is committed to GitHub but has not yet been applied to the live Supabase database.
 
 ## After activation
 
