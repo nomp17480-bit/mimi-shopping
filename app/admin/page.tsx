@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "../../lib/supabase/server";
-import { createProduct, updateProduct, deleteProduct, createCategory } from "./actions";
+import { createProduct, updateProduct, deleteProduct, createCategory, updateCategory, deleteCategory } from "./actions";
 import ProductImageUploader from "../../components/product-image-uploader";
 
 type Product = {
@@ -10,7 +10,7 @@ type Product = {
   material: string | null; size: string | null; dimensions: string | null; features: string[];
   is_active: boolean;
 };
-type Category = { id: number; name: string };
+type Category = { id: number; name: string; slug?: string | null; icon?: string | null };
 
 function ProductFields({ product, categories }: { product?: Product; categories: Category[] }) {
   return <>
@@ -34,7 +34,7 @@ function ProductFields({ product, categories }: { product?: Product; categories:
   </>;
 }
 
-export default async function AdminPage({ searchParams }: { searchParams: Promise<{ created?: string; updated?: string; deleted?: string; categoryCreated?: string }> }) {
+export default async function AdminPage({ searchParams }: { searchParams: Promise<{ created?: string; updated?: string; deleted?: string; categoryCreated?: string; categoryUpdated?: string; categoryDeleted?: string }> }) {
   const params = await searchParams;
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -44,7 +44,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const [{ count: productsCount }, { count: ordersCount }, { data: categoriesData }, { data: productsData, error: productsError }] = await Promise.all([
     supabase.from("products").select("*", { count: "exact", head: true }),
     supabase.from("orders").select("*", { count: "exact", head: true }),
-    supabase.from("categories").select("id,name").order("id"),
+    supabase.from("categories").select("id,name,slug,icon").order("id"),
     supabase.from("products").select("id,name,price,old_price,stock,category_id,description,colors,images,material,size,dimensions,features,is_active").order("created_at", { ascending: false }),
   ]);
   const categories = (categoriesData ?? []) as Category[];
@@ -54,13 +54,13 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     <header className="admin-top"><Link href="/" className="admin-brand">Mimi <span>SHOPPING</span></Link><span>صلاحية: {admin.role}</span><form action="/auth/signout" method="post"><button className="admin-secondary">خروج</button></form></header>
     <section className="admin-content">
       <span className="eyebrow">STORE MANAGEMENT</span><h1>لوحة إدارة Mimi Shopping</h1><p>مرحباً {user.email}. إدارة المتجر محمية بحسابك.</p>
-      <p className="admin-order-link"><Link href="/admin/orders">إدارة الطلبات ←</Link>　·　<Link href="/admin/inventory">إدارة المخزون حسب اللون والمقاس ←</Link>　·　<Link href="/admin/shipping">أسعار التوصيل ←</Link></p><div className="admin-stats"><article><small>المنتجات</small><strong>{productsCount ?? 0}</strong></article><article><small>الطلبات</small><strong>{ordersCount ?? 0}</strong></article><article><small>الأقسام</small><strong>{categories.length}</strong></article></div>
-      {params.created ? <p className="admin-success">تمت إضافة المنتج بنجاح.</p> : null}{params.updated ? <p className="admin-success">تم حفظ تعديلات المنتج.</p> : null}{params.deleted ? <p className="admin-success">تم حذف المنتج.</p> : null}{params.categoryCreated ? <p className="admin-success">تمت إضافة القسم.</p> : null}
+      <p className="admin-order-link"><Link href="/admin/team">إدارة المدراء والصلاحيات ←</Link>　·　<Link href="/admin/orders">إدارة الطلبات ←</Link>　·　<Link href="/admin/inventory">إدارة المخزون حسب اللون والمقاس ←</Link>　·　<Link href="/admin/shipping">أسعار التوصيل ←</Link></p><div className="admin-stats"><article><small>المنتجات</small><strong>{productsCount ?? 0}</strong></article><article><small>الطلبات</small><strong>{ordersCount ?? 0}</strong></article><article><small>الأقسام</small><strong>{categories.length}</strong></article></div>
+      {params.created ? <p className="admin-success">تمت إضافة المنتج بنجاح.</p> : null}{params.updated ? <p className="admin-success">تم حفظ تعديلات المنتج.</p> : null}{params.deleted ? <p className="admin-success">تم حذف المنتج.</p> : null}{params.categoryCreated ? <p className="admin-success">تمت إضافة القسم.</p> : null}{params.categoryUpdated ? <p className="admin-success">تم تعديل القسم.</p> : null}{params.categoryDeleted ? <p className="admin-success">تم حذف القسم.</p> : null}
       {productsError ? <p className="admin-error">تعذر تحميل المنتجات: {productsError.message}</p> : null}
       {canManageCatalog ? <>
         <section className="admin-section"><h2>إضافة منتج جديد</h2><form className="admin-product-form" action={createProduct}><ProductFields categories={categories}/><button className="admin-primary">حفظ المنتج</button></form></section>
         <section className="admin-section"><h2>المنتجات الحالية ({products.length})</h2>{products.length ? <div className="admin-product-list">{products.map(product=><details className="admin-product" key={product.id}><summary><span>{product.name}</span><span>{Number(product.price).toLocaleString("fr-DZ")} دج · مخزون {product.stock} · {product.is_active ? "نشط" : "مخفي"}</span></summary><form className="admin-product-form" action={updateProduct}><input type="hidden" name="id" value={product.id}/><ProductFields product={product} categories={categories}/><button className="admin-primary">حفظ التعديلات</button></form><form action={deleteProduct} className="admin-delete-form"><input type="hidden" name="id" value={product.id}/><button className="admin-danger">حذف المنتج</button></form></details>)}</div> : <p className="admin-muted">لم تتم إضافة أي منتجات بعد.</p>}</section>
-        <section className="admin-section"><h2>إضافة قسم</h2><form action={createCategory} className="admin-category-form"><label>اسم القسم</label><input name="name" required placeholder="مثال: حقائب السفر"/><label>رمز القسم بالإنجليزية</label><input name="slug" required placeholder="travel-bags"/><label>الأيقونة</label><input name="icon" defaultValue="👜" maxLength={8}/><button className="admin-primary">إضافة القسم</button></form></section>
+        <section className="admin-section"><h2>إضافة قسم</h2><form action={createCategory} className="admin-category-form"><label>اسم القسم</label><input name="name" required placeholder="مثال: حقائب السفر"/><label>رمز القسم بالإنجليزية</label><input name="slug" required placeholder="travel-bags"/><label>الأيقونة</label><input name="icon" defaultValue="👜" maxLength={8}/><button className="admin-primary">إضافة القسم</button></form><h2 style={{marginTop:24}}>الأقسام الحالية</h2><div className="admin-product-list">{categories.map(category=><details className="admin-product" key={category.id}><summary><span>{category.icon} {category.name}</span><span>{category.slug}</span></summary><form action={updateCategory} className="admin-product-form"><input type="hidden" name="id" value={category.id}/><label>اسم القسم</label><input name="name" required defaultValue={category.name}/><label>Slug</label><input name="slug" required defaultValue={category.slug??""}/><label>الأيقونة</label><input name="icon" defaultValue={category.icon??"👜"}/><button className="admin-primary">حفظ القسم</button></form><form action={deleteCategory} className="admin-delete-form"><input type="hidden" name="id" value={category.id}/><button className="admin-danger">حذف القسم</button></form></details>)}</div></section>
       </> : <p className="admin-notice">حسابك لديه صلاحيات محدودة ولا يمكنه إدارة المنتجات.</p>}
     </section>
   </main>;
