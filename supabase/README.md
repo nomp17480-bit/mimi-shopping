@@ -27,15 +27,15 @@ The migration `supabase/migrations/202611140004_role_scoped_policies.sql` replac
 - Reviews and coupons: `owner` / `admin` only.
 - Admin team: each admin can read their own role; only the owner can read/manage the team.
 
-**Run this migration once in the Supabase SQL Editor after the existing activation.** It changes policies only and does not modify store data. Do not rerun the bootstrap or activation scripts. The migration has been added to GitHub but has **not** been applied to the live Supabase database yet.
+**Live project status:** this migration has already been applied successfully to the Supabase project. Do not run it again. It changes policies only and does not modify store data. Do not rerun the bootstrap or activation scripts.
 
 ## After activation
 
 1. Sign in to `/admin`.
-2. Open **أسعار التوصيل** and initialize the 69 wilayas. All rates start at zero intentionally; enter actual carrier prices before enabling checkout.
-3. Open **إعدادات التواصل** and enter the business WhatsApp number and Instagram URL.
-4. Add products and upload their images. Add color/size variants and set stock for each combination.
-5. Place a controlled test order with a test product and verify it appears in **إدارة الطلبات** and the stock is reduced.
+2. Add any missing wilayas in **أسعار التوصيل**. All rates start at zero and remain inactive until actual home and desk prices are entered; this can be completed later.
+3. **إعدادات التواصل** is optional during setup. WhatsApp and Instagram can remain blank and be added later.
+4. Add products and upload their images whenever the catalog is ready. Color/size variants and per-variant stock are optional until those details are known.
+5. After at least one real delivery rate is entered and activated, run a controlled end-to-end COD test with an agreed test item and verify the order and stock update.
 
 ## Payment
 
@@ -43,4 +43,4 @@ Cash on delivery is the only active payment method in this release. Online payme
 
 ## Production readiness
 
-The site is a preview until the complete checkout, delivery rates, product data, payment provider, contact details, domain, and end-to-end tests are finished. Keep the GitHub `main` branch unchanged while validating `mimi-upgrade`.
+The site remains a Vercel Preview until delivery rates are configured, the custom domain is connected, and an end-to-end COD order has been safely tested. Product catalog details and contact links are intentionally editable later. Online payment is not part of this COD-only launch. Keep the GitHub `main` branch unchanged while validating `mimi-upgrade`.
