@@ -60,7 +60,7 @@ export async function POST(request: Request) {
     if (customerName.length < 2 || customerName.length > 120) {
       return jsonError("يرجى إدخال اسم صحيح (من حرفين إلى 120 حرفاً).", 400);
     }
-    if (phone.length < 8 || phone.length > 30 || !/^[0-9+()\\s.-]+$/.test(phone)) {
+    if (phone.length < 8 || phone.length > 30 || !/^[0-9+()\s.-]+$/.test(phone)) {
       return jsonError("رقم الهاتف غير صالح.", 400);
     }
     if (address.length < 4 || address.length > 500) {
