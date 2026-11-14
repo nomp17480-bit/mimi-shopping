@@ -32,3 +32,10 @@
 .add-cart-button{min-height:42px}
 @media(max-width:600px){.product-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.product-image{min-height:150px}.product-info{padding:12px 10px}.product-info h3{font-size:11px}.product-info p{font-size:9px}.product-price strong{font-size:12px}.variant-select select{font-size:10px;padding:7px}.add-cart-button{font-size:10px;padding:9px 6px}}
 @media(max-width:360px){.product-grid{grid-template-columns:1fr}.product-image{min-height:230px}}
+
+/* Graceful handling for broken or expired product image links */
+.product-image.image-failed{background:#f0e5e3}
+.product-image.image-failed img{display:none}
+.product-image.image-failed:after{content:"صورة المنتج غير متاحة حالياً";position:absolute;inset:0;display:grid;place-items:center;color:#9b7b82;font:11px Cairo,sans-serif;background:radial-gradient(circle at 50% 40%,#fff,#f0e5e3 78%)}
+@media(max-width:760px){.hero{min-height:0}.hero-copy{max-width:none}.hero h1{font-size:clamp(38px,9vw,54px)}.trust-strip{flex-wrap:wrap;row-gap:14px}.trust-strip>div{min-width:25%}}
+@media(max-width:600px){.site-header .brand{margin-inline:auto}.header-link{margin-inline:auto}.hero{padding-top:35px;padding-bottom:30px}.hero-art{height:260px}.section-heading p{margin:4px 0 0}.closing-banner{padding:55px 18px}.closing-banner h2{font-size:31px}}
