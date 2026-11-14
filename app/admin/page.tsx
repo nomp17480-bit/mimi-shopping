@@ -23,7 +23,7 @@ function ProductFields({ product, categories }: { product?: Product; categories:
     </div>
     <label>الوصف</label><textarea name="description" rows={3} defaultValue={product?.description ?? ""} />
     <label>الألوان (افصل بينها بفاصلة)</label><input name="colors" defaultValue={product?.colors?.join(", ") ?? ""} placeholder="أسود، بيج، بني" />
-    <label>روابط الصور (رابط في كل سطر)</label><textarea name="images" rows={3} defaultValue={product?.images?.join("\n") ?? ""} placeholder="https://..." />
+    <ProductImageUploader initialImages={product?.images?.join("\n") ?? ""} />
     <div className="admin-field-grid">
       <div><label>المادة</label><input name="material" defaultValue={product?.material ?? ""} /></div>
       <div><label>المقاس</label><input name="size" defaultValue={product?.size ?? ""} /></div>
