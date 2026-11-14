@@ -102,7 +102,7 @@ export async function deleteVariant(form: FormData) {
 const wilayas = ["أدرار","الشلف","الأغواط","أم البواقي","باتنة","بجاية","بسكرة","بشار","البليدة","البويرة","تمنراست","تبسة","تلمسان","تيارت","تيزي وزو","الجزائر","الجلفة","جيجل","سطيف","سعيدة","سكيكدة","سيدي بلعباس","عنابة","قالمة","قسنطينة","المدية","مستغانم","المسيلة","معسكر","ورقلة","وهران","البيض","إليزي","برج بوعريريج","بومرداس","الطارف","تندوف","تيسمسيلت","الوادي","خنشلة","سوق أهراس","تيبازة","ميلة","عين الدفلى","النعامة","عين تموشنت","غرداية","غليزان","تيميمون","برج باجي مختار","أولاد جلال","بني عباس","عين صالح","عين قزام","تقرت","جانت","المغير","المنيعة"];
 export async function initializeWilayas() {
  const supabase=await requireRole(catalogRoles);
- const rows=wilayas.map((wilaya,i)=>({wilaya:String(i+1).padStart(2,"0")+" - "+wilaya,home_price:0,desk_price:0,active:true}));
+ const rows=wilayas.map((wilaya,i)=>({wilaya:String(i+1).padStart(2,"0")+" - "+wilaya,home_price:0,desk_price:0,active:false}));
  const {error}=await supabase.from("shipping_rates").upsert(rows,{onConflict:"wilaya",ignoreDuplicates:true});
  if(error) throw new Error("تعذر تجهيز الولايات: "+error.message);
  revalidatePath("/admin/shipping");
