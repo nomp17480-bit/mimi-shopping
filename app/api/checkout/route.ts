@@ -51,6 +51,42 @@ export async function POST(request: Request) {
       return jsonError("السلة فارغة أو تحتوي على عدد كبير من المنتجات.", 400);
     }
 
+    const customerName = typeof input.customer_name === "string" ? input.customer_name.trim() : "";
+    const phone = typeof input.phone === "string" ? input.phone.trim() : "";
+    const address = typeof input.address === "string" ? input.address.trim() : "";
+    const note = typeof input.customer_note === "string" ? input.customer_note : "";
+    const shippingMethod = input.shipping_method;
+    const paymentMethod = input.payment_method;
+    if (customerName.length < 2 || customerName.length > 120) {
+      return jsonError("يرجى إدخال اسم صحيح (من حرفين إلى 120 حرفاً).", 400);
+    }
+    if (phone.length < 8 || phone.length > 30 || !/^[0-9+()\\s.-]+$/.test(phone)) {
+      return jsonError("رقم الهاتف غير صالح.", 400);
+    }
+    if (address.length < 4 || address.length > 500) {
+      return jsonError("يرجى إدخال عنوان صحيح لا يتجاوز 500 حرف.", 400);
+    }
+    if (note.length > 1000) {
+      return jsonError("الملاحظة طويلة جداً.", 400);
+    }
+    if (shippingMethod !== "home" && shippingMethod !== "desk") {
+      return jsonError("طريقة التوصيل غير صالحة.", 400);
+    }
+    if (paymentMethod !== "cod") {
+      return jsonError("الدفع عند الاستلام فقط متاح حالياً.", 400);
+    }
+    const validItems = items.every((item) => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) return false;
+      const line = item as Record<string, unknown>;
+      return Number.isSafeInteger(line.product_id) && Number(line.product_id) > 0
+        && (line.variant_id === null || line.variant_id === undefined
+          || (Number.isSafeInteger(line.variant_id) && Number(line.variant_id) > 0))
+        && Number.isInteger(line.quantity) && Number(line.quantity) >= 1 && Number(line.quantity) <= 10;
+    });
+    if (!validItems) {
+      return jsonError("تحتوي السلة على بيانات منتج أو كمية غير صالحة.", 400);
+    }
+
     const wilaya = typeof input.wilaya === "string" ? input.wilaya.trim() : "";
     const commune = typeof input.commune === "string" ? input.commune.trim() : "";
     const selectedWilaya = locationData.wilayas.find((item) => `${item.code} - ${item.name}` === wilaya);
@@ -63,14 +99,14 @@ export async function POST(request: Request) {
 
     const supabase = await createSupabaseServerClient();
     const { data, error } = await supabase.rpc("place_public_order", {
-      p_customer_name: typeof input.customer_name === "string" ? input.customer_name : "",
-      p_phone: typeof input.phone === "string" ? input.phone : "",
+      p_customer_name: customerName,
+      p_phone: phone,
       p_wilaya: wilaya,
       p_commune: commune,
-      p_address: typeof input.address === "string" ? input.address : "",
-      p_shipping_method: typeof input.shipping_method === "string" ? input.shipping_method : "",
-      p_payment_method: typeof input.payment_method === "string" ? input.payment_method : "",
-      p_customer_note: typeof input.customer_note === "string" ? input.customer_note : "",
+      p_address: address,
+      p_shipping_method: shippingMethod,
+      p_payment_method: paymentMethod,
+      p_customer_note: note,
       p_items: items,
     });
 
