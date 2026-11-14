@@ -29,6 +29,17 @@ The migration `supabase/migrations/202611140004_role_scoped_policies.sql` replac
 
 **Live project status:** this migration has already been applied successfully to the Supabase project. Do not run it again. It changes policies only and does not modify store data. Do not rerun the bootstrap or activation scripts.
 
+## Public checkout hardening (required before accepting real orders)
+
+The checkout RPC is callable by the public browser role so the website can submit cash-on-delivery orders without exposing a service-role key. Migration `202611140005_harden_public_checkout.sql` closes validation gaps that could otherwise be bypassed by calling that RPC directly:
+
+- Validates that the selected commune belongs to the selected wilaya using a private reference table seeded from the repository's 69-wilaya location dataset (1,541 commune entries).
+- Enforces address and phone format limits inside PostgreSQL, not only in the Next.js route.
+- Requires a selected active color/size variant whenever a product has variants.
+- Rejects delivery methods whose configured fee is zero or unavailable.
+
+**Action required:** run `supabase/migrations/202611140005_harden_public_checkout.sql` once in the Supabase SQL Editor before accepting real customer orders. It creates the private location reference table and replaces the checkout function; it does not delete or rewrite existing orders, products, variants, or stock. Do not run it more than once unless a later migration explicitly instructs you to do so. The migration is committed to GitHub but has not yet been applied to the live Supabase database.
+
 ## After activation
 
 1. Sign in to `/admin`.
@@ -43,4 +54,4 @@ Cash on delivery is the only active payment method in this release. Online payme
 
 ## Production readiness
 
-The site remains a Vercel Preview until delivery rates are configured, the custom domain is connected, and an end-to-end COD order has been safely tested. Product catalog details and contact links are intentionally editable later. Online payment is not part of this COD-only launch. Keep the GitHub `main` branch unchanged while validating `mimi-upgrade`.
+The site remains a Vercel Preview until migration 005 is applied, delivery rates are configured, the custom domain is connected, and an end-to-end COD order has been safely tested. Product catalog details and contact links are intentionally editable later. Online payment is not part of this COD-only launch. Keep the GitHub `main` branch unchanged while validating `mimi-upgrade`.
