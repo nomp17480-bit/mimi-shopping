@@ -5,7 +5,6 @@ begin;
 
 -- Mimi Shopping: secure public COD checkout.
 -- Run AFTER bootstrap.sql. This creates one SECURITY DEFINER RPC; clients cannot insert orders directly.
-begin;
 
 create or replace function public.place_public_order(
   p_customer_name text,
@@ -154,7 +153,6 @@ revoke all on function public.place_public_order(text,text,text,text,text,text,t
 grant execute on function public.place_public_order(text,text,text,text,text,text,text,text,jsonb) to anon, authenticated;
 
 -- Public read-only product images; only authenticated store admins may upload/change/delete.
-begin;
 insert into storage.buckets (id,name,public,file_size_limit,allowed_mime_types)
 values ('mimi-products','mimi-products',true,5242880,array['image/jpeg','image/png','image/webp','image/avif'])
 on conflict (id) do nothing;
@@ -177,7 +175,6 @@ on storage.objects for delete to authenticated
 using (bucket_id = 'mimi-products' and public.is_store_admin());
 
 -- Public store contact settings; no payment or service secrets are stored here.
-begin;
 create table if not exists public.store_settings (
   id boolean primary key default true check (id = true),
   whatsapp_number text,
