@@ -1,57 +1,65 @@
-# Mimi Shopping database activation
+# Mimi Shopping — Supabase database status
 
-The initial schema bootstrap has already been installed in the Supabase project.
+This file records the live Supabase setup. It is a status guide, not an instruction to rerun completed SQL.
 
-## One-time activation
+## Completed setup — do not rerun
 
-Run `supabase/activate_store.sql` once in the Supabase SQL Editor. It enables:
+The live project has successfully completed:
 
-- Atomic cash-on-delivery order creation with server-side price, shipping and stock checks.
-- A public product-image bucket with upload/change/delete restricted to authenticated store administrators.
-- Public store contact settings (WhatsApp and Instagram) editable by the owner or an administrator.
+1. `supabase/bootstrap.sql` — initial schema.
+2. `supabase/activate_store.sql` — one-time store activation, checkout RPC foundation, product image storage, and store settings.
+3. `supabase/migrations/202611140004_role_scoped_policies.sql` — least-privilege RLS policies.
+4. Checkout hardening migration 005 — applied through the split scripts in `supabase/manual/`.
 
-Do not run the activation file repeatedly. It creates named RLS policies and is intended as a one-time migration.
+The user confirmed successful execution of each manual step. Read-only verification returned:
+- `public.store_communes`: **1,541** rows.
+- `public.place_public_order`: **1** function.
 
-**Important:** `supabase/migrations/202611140003_product_image_storage.sql` contains the same bucket and storage policies as the activation file. It is an alternative migration record, not an additional script to run after `activate_store.sql`. Running both can fail because the named storage policies already exist. Do not run it separately in the already-activated project.
+**Do not rerun bootstrap, activation, migration 004, or any migration 005 step.** In particular, do not run `202611140003_product_image_storage.sql` after activation: it duplicates the storage bucket/policies created by the activation script.
 
-## Least-privilege role policy update
+## What migration 005 protects
 
-The initial bootstrap used a broad `is_store_admin()` check for several tables and image uploads. The admin UI already checks individual roles, but direct authenticated Supabase requests could bypass UI-only restrictions.
+The checkout RPC is public-callable so the storefront can submit COD orders without a service-role key. The hardening migration adds database-level validation that cannot be bypassed by skipping the Next.js form:
 
-The migration `supabase/migrations/202611140004_role_scoped_policies.sql` replaces those broad policies with role-scoped access:
+- Confirms that a commune belongs to the selected wilaya using a private reference table seeded with 1,541 commune rows.
+- Validates phone and address constraints inside PostgreSQL.
+- Requires a valid variant when a product has variants.
+- Rejects a delivery choice unless its configured rate is active and greater than zero.
+- Keeps stock changes inside the order transaction so failed orders do not partially decrement stock.
 
-- `owner` / `admin`: full management access.
-- `catalog`: categories, products, variants, shipping rates, and product-image uploads.
-- `orders`: read and update orders; read order items.
-- `support`: read orders and order items only.
-- Reviews and coupons: `owner` / `admin` only.
-- Admin team: each admin can read their own role; only the owner can read/manage the team.
+The original combined migration is retained at `supabase/migrations/202611140005_harden_public_checkout.sql`. The mobile-friendly scripts are retained under `supabase/manual/` as an execution record. They are not pending work.
 
-**Live project status:** this migration has already been applied successfully to the Supabase project. Do not run it again. It changes policies only and does not modify store data. Do not rerun the bootstrap or activation scripts.
+## Current shipping setup
 
-## Public checkout hardening (required before accepting real orders)
+Shipping rows are prepared with zero prices and inactive status. This is intentional until verified courier prices are available.
 
-The checkout RPC is callable by the public browser role so the website can submit cash-on-delivery orders without exposing a service-role key. Migration `202611140005_harden_public_checkout.sql` closes validation gaps that could otherwise be bypassed by calling that RPC directly:
+From **لوحة الإدارة → أسعار التوصيل**:
+- Enter the real home-delivery fee.
+- Enter the real desk-delivery fee.
+- Activate only the wilayas and delivery methods the store can actually serve.
 
-- Validates that the selected commune belongs to the selected wilaya using a private reference table seeded from the repository's 69-wilaya location dataset (1,541 commune entries).
-- Enforces address and phone format limits inside PostgreSQL, not only in the Next.js route.
-- Requires a selected active color/size variant whenever a product has variants.
-- Rejects delivery methods whose configured fee is zero or unavailable.
+Do not use estimated prices. The storefront may display both delivery choices, but the database must block checkout when the selected fee is unavailable or zero.
 
-**Action required:** on mobile, use the smaller scripts in `supabase/manual/` in numeric order, steps `005-step-01` through `005-step-09`, running each file once in the Supabase SQL Editor. The original combined migration remains at `supabase/migrations/202611140005_harden_public_checkout.sql` for desktop use. The split scripts are safe to apply in order: commune inserts use `ON CONFLICT DO NOTHING`, and the final step replaces the checkout function. They do not delete or rewrite existing orders, products, variants, or stock. The update is committed to GitHub but has not yet been applied to the live Supabase database.
+## Roles and access
 
-## After activation
+The applied role-scoped policy update limits access by role:
+- `owner` / `admin`: administrative management.
+- `catalog`: catalog, variants, categories, shipping configuration, and product image operations.
+- `orders`: order management and permitted order-item reads.
+- `support`: read-only order and order-item access.
+- Reviews, coupons, and team administration remain restricted as defined by the policies.
 
-1. Sign in to `/admin`.
-2. Add any missing wilayas in **أسعار التوصيل**. All rates start at zero and remain inactive until actual home and desk prices are entered; this can be completed later.
-3. **إعدادات التواصل** is optional during setup. WhatsApp and Instagram can remain blank and be added later.
-4. Add products and upload their images whenever the catalog is ready. Color/size variants and per-variant stock are optional until those details are known.
-5. After at least one real delivery rate is entered and activated, run a controlled end-to-end COD test with an agreed test item and verify the order and stock update.
+Admin UI checks are not the only security boundary; database RLS remains essential.
 
 ## Payment
 
-Cash on delivery is the only active payment method in this release. Online payment is deliberately rejected by the checkout RPC until a payment provider and merchant credentials are configured and verified. Never mark an online order paid based only on a browser redirect.
+Cash on delivery is the only enabled payment method. Online payment is not configured and must not be represented as available. Never mark an order paid based solely on a browser redirect.
 
-## Production readiness
+## Remaining release work
 
-The site remains a Vercel Preview until migration 005 is applied, delivery rates are configured, the custom domain is connected, and an end-to-end COD order has been safely tested. Product catalog details and contact links are intentionally editable later. Online payment is not part of this COD-only launch. Keep the GitHub `main` branch unchanged while validating `mimi-upgrade`.
+The database hardening itself is complete. Before Production:
+1. Enter verified delivery rates.
+2. Run one controlled COD order after explicit approval, then verify the saved order and stock update.
+3. Keep the current Preview deployment until the application and domain are approved for release.
+
+Do not delete or rewrite existing products, orders, variants, stock, or settings as part of routine validation.
