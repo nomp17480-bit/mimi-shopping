@@ -104,7 +104,7 @@ begin
         raise exception 'إحدى خيارات اللون أو المقاس لم تعد متاحة.';
       end if;
       if v_variant.stock < v_qty then
-        raise exception 'المخزون غير كافٍ للمنتج: ' || v_product.name;
+        raise exception 'المخزون غير كافٍ للمنتج: %', v_product.name;
       end if;
       update public.product_variants set stock = stock - v_qty where id = v_variant_id;
       v_price := coalesce(v_variant.price_override, v_product.price);
@@ -115,7 +115,7 @@ begin
       ));
     else
       if v_product.stock < v_qty then
-        raise exception 'المخزون غير كافٍ للمنتج: ' || v_product.name;
+        raise exception 'المخزون غير كافٍ للمنتج: %', v_product.name;
       end if;
       update public.products set stock = stock - v_qty where id = v_product_id;
       v_price := v_product.price;
