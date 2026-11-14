@@ -6,11 +6,33 @@ import ProductImageUploader from "../../components/product-image-uploader";
 
 type Product = {
   id: number; name: string; price: number; old_price: number | null; stock: number;
-  category_id: number | null; description: string | null; colors: string[]; images: string[];
+  category_id: number | null; description: string | null; colors: string[]; images: unknown;
   material: string | null; size: string | null; dimensions: string | null; features: string[];
   is_active: boolean;
 };
 type Category = { id: number; name: string; slug?: string | null; icon?: string | null };
+
+function imageInput(value: unknown): string {
+  let parsed = value;
+  if (typeof value === "string") {
+    try {
+      const candidate = JSON.parse(value);
+      if (Array.isArray(candidate)) parsed = candidate;
+      else return value;
+    } catch {
+      return value;
+    }
+  }
+  if (!Array.isArray(parsed)) return "";
+  return parsed
+    .map((item) => typeof item === "string"
+      ? item
+      : item && typeof item === "object" && "url" in item && typeof item.url === "string"
+        ? item.url
+        : "")
+    .filter(Boolean)
+    .join("\n");
+}
 
 function ProductFields({ product, categories }: { product?: Product; categories: Category[] }) {
   return <>
@@ -23,7 +45,7 @@ function ProductFields({ product, categories }: { product?: Product; categories:
     </div>
     <label>الوصف</label><textarea name="description" rows={3} defaultValue={product?.description ?? ""} />
     <label>الألوان (افصل بينها بفاصلة)</label><input name="colors" defaultValue={product?.colors?.join(", ") ?? ""} placeholder="أسود، بيج، بني" />
-    <ProductImageUploader initialImages={product?.images?.join("\n") ?? ""} />
+    <ProductImageUploader initialImages={imageInput(product?.images)} />
     <div className="admin-field-grid">
       <div><label>المادة</label><input name="material" defaultValue={product?.material ?? ""} /></div>
       <div><label>المقاس</label><input name="size" defaultValue={product?.size ?? ""} /></div>
