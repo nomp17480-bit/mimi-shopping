@@ -42,7 +42,11 @@ begin
   if length(trim(coalesce(p_wilaya,''))) = 0 or length(trim(coalesce(p_commune,''))) = 0 or length(trim(coalesce(p_address,''))) < 4 then
     raise exception 'يرجى إكمال الولاية والبلدية والعنوان.';
   end if;
-  if p_shipping_method not in ('home','desk') then
+  if length(coalesce(p_customer_note,'')) > 1000 then
+    raise exception 'الملاحظة طويلة جداً.';
+  end if;
+
+  if coalesce(p_shipping_method,'') not in ('home','desk') then
     raise exception 'طريقة التوصيل غير صالحة.';
   end if;
   if coalesce(p_payment_method,'') <> 'cod' then
