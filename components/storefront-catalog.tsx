@@ -4,13 +4,16 @@ import { FormEvent, useMemo, useState } from "react";
 import locationData from "../data/algeria-locations.json";
 
 type Variant={id:number;product_id:number;color:string;size:string;price_override:number|null;stock:number;is_active:boolean};
-type Product={id:number;name:string;price:number;old_price?:number|null;description?:string|null;images?:unknown;stock:number;colors?:string[];variants:Variant[]};
+type Product={id:number;name:string;price:number;old_price?:number|null;description?:string|null;images?:unknown;stock:number;colors?:string[];category_id:number|null;variants:Variant[]};
+type Category={id:number;name:string;icon?:string|null};
 type Rate={id:number;wilaya:string;home_price:number;desk_price:number};
 type CartLine={key:string;product_id:number;variant_id:number|null;name:string;price:number;quantity:number;stock:number;color:string;size:string};
 function imageList(images:unknown):string[]{let values:unknown[]=[];if(Array.isArray(images))values=images;else if(typeof images==="string"){const raw=images.trim();if(!raw)return [];try{const parsed=JSON.parse(raw);values=Array.isArray(parsed)?parsed:raw.split(/\r?\n/)}catch{values=raw.split(/\r?\n/)}}return values.map(v=>typeof v==="string"?v:v&&typeof v==="object"&&"url" in v&&typeof v.url==="string"?v.url:"").filter((v):v is string=>/^https?:\/\//i.test(v))}
-export default function StorefrontCatalog({products,rates,whatsapp}:{products:Product[];rates:Rate[];whatsapp:string}) {
+export default function StorefrontCatalog({products,rates,whatsapp,categories}:{products:Product[];rates:Rate[];whatsapp:string;categories:Category[]}) {
  const [cart,setCart]=useState<CartLine[]>([]),[choices,setChoices]=useState<Record<number,number>>({});
  const [message,setMessage]=useState(""),[loading,setLoading]=useState(false),[confirmed,setConfirmed]=useState(""),[whatsappLink,setWhatsappLink]=useState("");
+ const [search,setSearch]=useState(""),[categoryFilter,setCategoryFilter]=useState("all");
+ const visibleProducts=useMemo(()=>products.filter(p=>(categoryFilter==="all"||String(p.category_id??"")===categoryFilter)&&(!search.trim()||p.name.toLocaleLowerCase("ar").includes(search.trim().toLocaleLowerCase("ar"))||(p.description??"").toLocaleLowerCase("ar").includes(search.trim().toLocaleLowerCase("ar")))),[products,categoryFilter,search]);
  const [wilayaCode,setWilayaCode]=useState(""),[commune,setCommune]=useState(""),[method,setMethod]=useState<"home"|"desk">("home");
  const wilayaOptions=locationData.wilayas;
  const selectedWilaya=wilayaOptions.find(w=>w.code===wilayaCode);
@@ -48,7 +51,7 @@ export default function StorefrontCatalog({products,rates,whatsapp}:{products:Pr
     <div className="product-image">{imageList(product.images).length?<img src={imageList(product.images)[0]} alt={product.name} loading="lazy" onError={e=>e.currentTarget.parentElement?.classList.add("image-failed")}/>:<div className="image-placeholder"><span>M</span><small>صورة المنتج قريباً</small></div>}<span className="product-tag">MIMI PICK</span>{available<1?<span className="stock-tag">نفد المخزون</span>:null}</div>
     <div className="product-info"><h3>{product.name}</h3>{product.description?<p>{product.description}</p>:null}
      {product.variants.length?<div className="variant-select"><label>اللون / المقاس</label><select value={selected?.id??""} onChange={e=>setChoices(old=>({...old,[product.id]:Number(e.target.value)}))}>{product.variants.map(v=><option key={v.id} value={v.id}>{[v.color,v.size].filter(Boolean).join(" / ")||"الخيار"} — {v.stock} متوفر</option>)}</select></div>:null}
-     <div className="product-price"><strong>{Number(selected?.price_override??product.price).toLocaleString("ar-DZ")} دج</strong>{product.old_price&&product.old_price>Number(selected?.price_override??product.price)?<del>{Number(product.old_price).toLocaleString("ar-DZ")} دج</del>:null}</div><small className="product-availability">{available>0?("متوفر · "+available+" في المخزون"):"غير متوفر حالياً"}</small><button className="add-cart-button" disabled={available<1} onClick={()=>add(product)}>{available>0?"أضيفي إلى السلة":"غير متوفر"}</button>
+     {!product.variants.length&&product.colors?.length?<div className="product-colors"><small>الألوان المتاحة:</small><span>{product.colors.join(" · ")}</span></div>:null}\n     <div className="product-price"><strong>{Number(selected?.price_override??product.price).toLocaleString("ar-DZ")} دج</strong>{product.old_price&&product.old_price>Number(selected?.price_override??product.price)?<del>{Number(product.old_price).toLocaleString("ar-DZ")} دج</del>:null}</div><small className="product-availability">{available>0?("متوفر · "+available+" في المخزون"):"غير متوفر حالياً"}</small><button className="add-cart-button" disabled={available<1} onClick={()=>add(product)}>{available>0?"أضيفي إلى السلة":"غير متوفر"}</button>
     </div>
    </article>})}
   </div>
