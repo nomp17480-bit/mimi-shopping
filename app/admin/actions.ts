@@ -161,7 +161,7 @@ export async function updateStoreSettings(form: FormData) {
  const instagram=text(form,"instagram_url");
  if(rawPhone && !/^\+?[0-9]{8,15}$/.test(rawPhone))throw new Error("رقم WhatsApp غير صالح. استخدم رمز الدولة ثم الرقم.");
  if(instagram && !/^https:\/\/(www\.)?instagram\.com\//i.test(instagram))throw new Error("رابط Instagram غير صالح.");
- const {error}=await supabase.from("store_settings").upsert({id:true,whatsapp_number:rawPhone||null,instagram_url:instagram||null,updated_at:new Date().toISOString()});
+ const {error}=await supabase.from("store_settings").update({whatsapp_number:rawPhone||null,instagram_url:instagram||null,updated_at:new Date().toISOString()}).eq("id",true);
  if(error)throw new Error("تعذر حفظ إعدادات المتجر: "+error.message);
  revalidatePath("/admin/settings");revalidatePath("/");
  redirect("/admin/settings?saved=1");
