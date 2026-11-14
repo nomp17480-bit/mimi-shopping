@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
+import locationData from "../data/algeria-locations.json";
 
 type Variant={id:number;product_id:number;color:string;size:string;price_override:number|null;stock:number;is_active:boolean};
 type Product={id:number;name:string;price:number;old_price?:number|null;description?:string|null;images?:unknown;stock:number;colors?:string[];variants:Variant[]};
@@ -10,9 +11,13 @@ function imageFor(images:unknown){if(!Array.isArray(images))return null;const v=
 export default function StorefrontCatalog({products,rates,whatsapp}:{products:Product[];rates:Rate[];whatsapp:string}) {
  const [cart,setCart]=useState<CartLine[]>([]),[choices,setChoices]=useState<Record<number,number>>({});
  const [message,setMessage]=useState(""),[loading,setLoading]=useState(false),[confirmed,setConfirmed]=useState(""),[whatsappLink,setWhatsappLink]=useState("");
- const [wilaya,setWilaya]=useState(rates[0]?.wilaya??""),[method,setMethod]=useState<"home"|"desk">("home");
+ const [wilayaCode,setWilayaCode]=useState(""),[commune,setCommune]=useState(""),[method,setMethod]=useState<"home"|"desk">("home");
+ const wilayaOptions=locationData.wilayas;
+ const selectedWilaya=wilayaOptions.find(w=>w.code===wilayaCode);
+ const wilaya=selectedWilaya?.name??"";
+ const communes=useMemo(()=>locationData.communes.filter(c=>c.wilayaCode===wilayaCode),[wilayaCode]);
  const subtotal=useMemo(()=>cart.reduce((s,l)=>s+l.price*l.quantity,0),[cart]);
- const selectedRate=rates.find(r=>r.wilaya===wilaya);
+ const selectedRate=rates.find(r=>r.wilaya.trim()===wilaya);
  const shipping=selectedRate?(method==="home"?Number(selectedRate.home_price):Number(selectedRate.desk_price)):0;
  const total=subtotal+shipping;
  function add(product:Product){
@@ -28,11 +33,12 @@ export default function StorefrontCatalog({products,rates,whatsapp}:{products:Pr
  async function submit(event:FormEvent<HTMLFormElement>){
   event.preventDefault();setMessage("");setConfirmed("");
   if(!cart.length){setMessage("السلة فارغة.");return}
-  if(!selectedRate){setMessage("اختر ولاية يتوفر فيها التوصيل.");return}
+  if(!selectedWilaya||!communes.some(c=>c.name===commune)){setMessage("اختر الولاية والبلدية من القائمتين.");return}
+  if(!selectedRate){setMessage("التوصيل غير متاح حالياً في الولاية المختارة.");return}
   const formElement=event.currentTarget; const form=new FormData(formElement);
-  const payload={customer_name:String(form.get("customer_name")??""),phone:String(form.get("phone")??""),wilaya,commune:String(form.get("commune")??""),address:String(form.get("address")??""),shipping_method:method,payment_method:"cod",customer_note:String(form.get("customer_note")??""),items:cart.map(x=>({product_id:x.product_id,variant_id:x.variant_id,quantity:x.quantity}))};
+  const payload={customer_name:String(form.get("customer_name")??""),phone:String(form.get("phone")??""),wilaya,commune,address:String(form.get("address")??""),shipping_method:method,payment_method:"cod",customer_note:String(form.get("customer_note")??""),items:cart.map(x=>({product_id:x.product_id,variant_id:x.variant_id,quantity:x.quantity}))};
   setLoading(true);
-  try{const response=await fetch("/api/checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});const result=await response.json();if(!response.ok)throw new Error(result.error||"تعذر تسجيل الطلب.");setConfirmed(result.order?.order_number??"تم تسجيل طلبك");const digits=whatsapp.replace(/[^0-9]/g,"");const note=encodeURIComponent("طلب جديد من Mimi Shopping\nرقم الطلب: "+(result.order?.order_number??"")+"\nالإجمالي: "+Number(result.order?.total??total).toLocaleString("ar-DZ")+" دج");setWhatsappLink(digits?"https://wa.me/"+digits+"?text="+note:"");setCart([]);formElement.reset();setMessage("")}
+  try{const response=await fetch("/api/checkout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});const result=await response.json();if(!response.ok)throw new Error(result.error||"تعذر تسجيل الطلب.");setConfirmed(result.order?.order_number??"تم تسجيل طلبك");const digits=whatsapp.replace(/[^0-9]/g,"");const note=encodeURIComponent("طلب جديد من Mimi Shopping\nرقم الطلب: "+(result.order?.order_number??"")+"\nالإجمالي: "+Number(result.order?.total??total).toLocaleString("ar-DZ")+" دج");setWhatsappLink(digits?"https://wa.me/"+digits+"?text="+note:"");setCart([]);formElement.reset();setWilayaCode("");setCommune("");setMessage("")}
   catch(error){setMessage(error instanceof Error?error.message:"حدث خطأ غير متوقع.")}
   finally{setLoading(false)}
  }
@@ -48,7 +54,7 @@ export default function StorefrontCatalog({products,rates,whatsapp}:{products:Pr
   </div>
   {cart.length>0?<section className="cart-checkout" id="checkout"><div className="cart-head"><div><span className="eyebrow">YOUR BAG</span><h2>سلة مشترياتك ({cart.reduce((s,x)=>s+x.quantity,0)})</h2></div><button type="button" className="cart-clear" onClick={()=>setCart([])}>إفراغ السلة</button></div>
    <div className="cart-lines">{cart.map(line=><div className="cart-line" key={line.key}><div><strong>{line.name}</strong><small>{[line.color,line.size].filter(Boolean).join(" / ")||"—"} · {line.price.toLocaleString("ar-DZ")} دج</small></div><div className="qty-control"><button type="button" onClick={()=>changeQty(line.key,line.quantity-1)}>−</button><span>{line.quantity}</span><button type="button" onClick={()=>changeQty(line.key,line.quantity+1)}>+</button></div><strong>{(line.price*line.quantity).toLocaleString("ar-DZ")} دج</strong></div>)}</div>
-   <form className="checkout-form" onSubmit={submit}><h3>معلومات التوصيل</h3><div className="checkout-grid"><label>الاسم الكامل<input name="customer_name" required minLength={2} maxLength={120}/></label><label>رقم الهاتف<input name="phone" required type="tel" maxLength={30} placeholder="05 / 06 / 07 ..."/></label><label>الولاية<select value={wilaya} onChange={e=>setWilaya(e.target.value)} required>{rates.map(r=><option key={r.id} value={r.wilaya}>{r.wilaya}</option>)}</select></label><label>البلدية<input name="commune" required/></label></div><label>العنوان بالتفصيل<input name="address" required minLength={4}/></label><label>ملاحظة للطلب (اختياري)<textarea name="customer_note" rows={2}/></label><label>طريقة التوصيل<select value={method} onChange={e=>setMethod(e.target.value as "home"|"desk")}><option value="home">إلى المنزل</option><option value="desk">إلى مكتب التوصيل</option></select></label><div className="checkout-total"><span>المنتجات</span><strong>{subtotal.toLocaleString("ar-DZ")} دج</strong><span>التوصيل</span><strong>{shipping.toLocaleString("ar-DZ")} دج</strong><span>الإجمالي</span><strong>{total.toLocaleString("ar-DZ")} دج</strong></div><p className="cod-note">الدفع عند الاستلام. الدفع الإلكتروني سيُفعّل بعد ربط بوابة دفع معتمدة.</p><button className="primary-button checkout-submit" disabled={loading||!rates.length}>{loading?"جارٍ إرسال الطلب...":"تأكيد الطلب"}</button>{message?<p className="checkout-error">{message}</p>:null}</form>
+   <form className="checkout-form" onSubmit={submit}><h3>معلومات التوصيل</h3><div className="checkout-grid"><label>الاسم الكامل<input name="customer_name" required minLength={2} maxLength={120}/></label><label>رقم الهاتف<input name="phone" required type="tel" maxLength={30} placeholder="05 / 06 / 07 ..."/></label><label>الولاية<select value={wilayaCode} onChange={e=>{setWilayaCode(e.target.value);setCommune("");}} required><option value="">اختر الولاية</option>{wilayaOptions.map(w=><option key={w.code} value={w.code}>{w.code} - {w.name}</option>)}</select></label><label>البلدية<select name="commune" value={commune} onChange={e=>setCommune(e.target.value)} required disabled={!wilayaCode}><option value="">{wilayaCode?"اختر البلدية":"اختر الولاية أولاً"}</option>{communes.map((c,i)=><option key={c.name+"-"+c.daira+"-"+i} value={c.name}>{c.name}</option>)}</select></label></div>{selectedWilaya&&!selectedRate?<p className="checkout-error">التوصيل غير مفعّل حالياً في ولاية {wilaya}. اختر ولاية أخرى أو تواصل معنا.</p>:null}<label>العنوان بالتفصيل<input name="address" required minLength={4}/></label><label>ملاحظة للطلب (اختياري)<textarea name="customer_note" rows={2}/></label><label>طريقة التوصيل<select value={method} onChange={e=>setMethod(e.target.value as "home"|"desk")} disabled={!selectedRate}><option value="home">إلى المنزل</option><option value="desk">إلى مكتب التوصيل</option></select></label><div className="checkout-total"><span>المنتجات</span><strong>{subtotal.toLocaleString("ar-DZ")} دج</strong><span>التوصيل</span><strong>{selectedRate?shipping.toLocaleString("ar-DZ")+" دج":"غير متاح"}</strong><span>الإجمالي</span><strong>{selectedRate?total.toLocaleString("ar-DZ")+" دج":"يُحسب بعد تفعيل التوصيل"}</strong></div><p className="cod-note">الدفع عند الاستلام. الدفع الإلكتروني سيُفعّل بعد ربط بوابة دفع معتمدة.</p><button className="primary-button checkout-submit" disabled={loading||!selectedRate}>{loading?"جارٍ إرسال الطلب...":"تأكيد الطلب"}</button>{message?<p className="checkout-error">{message}</p>:null}</form>
   </section>:null}
   {confirmed?<div className="order-confirmation"><strong>تم استلام طلبك بنجاح</strong><p>رقم الطلب: {confirmed}</p><span>سنتواصل معك لتأكيد تفاصيل التوصيل.</span>{whatsappLink?<p><a className="whatsapp-order-link" href={whatsappLink} target="_blank" rel="noreferrer">إرسال تفاصيل الطلب عبر WhatsApp</a></p>:<small>يمكن للمتجر تفعيل زر WhatsApp من إعدادات الإدارة.</small>}</div>:null}
  </>;
