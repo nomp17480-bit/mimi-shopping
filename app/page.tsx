@@ -15,7 +15,7 @@ async function getStoreData() {
    supabase.from("shipping_rates").select("id,wilaya,home_price,desk_price").eq("active",true).order("wilaya"),
    supabase.from("store_settings").select("whatsapp_number,instagram_url").eq("id",true).maybeSingle()
   ]);
-  if(c.error||p.error||v.error||r.error||s.error)return {categories:[] as Category[],products:[] as Product[],variants:[] as Variant[],rates:[] as Rate[],settings:null as {whatsapp_number:string|null;instagram_url:string|null}|null,connected:false};
+  if(c.error||p.error||v.error||r.error)return {categories:[] as Category[],products:[] as Product[],variants:[] as Variant[],rates:[] as Rate[],settings:null as {whatsapp_number:string|null;instagram_url:string|null}|null,connected:false};
   return {categories:(c.data??[]) as Category[],products:(p.data??[]) as Product[],variants:(v.data??[]) as Variant[],rates:(r.data??[]) as Rate[],settings:s.data,connected:true};
  } catch {return {categories:[] as Category[],products:[] as Product[],variants:[] as Variant[],rates:[] as Rate[],settings:null as {whatsapp_number:string|null;instagram_url:string|null}|null,connected:false};}
 }
