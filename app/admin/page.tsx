@@ -53,7 +53,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     <header className="admin-top"><Link href="/" className="admin-brand">Mimi <span>SHOPPING</span></Link><span>صلاحية: {admin.role}</span><form action="/auth/signout" method="post"><button className="admin-secondary">خروج</button></form></header>
     <section className="admin-content">
       <span className="eyebrow">STORE MANAGEMENT</span><h1>لوحة إدارة Mimi Shopping</h1><p>مرحباً {user.email}. إدارة المتجر محمية بحسابك.</p>
-      <p className="admin-order-link"><Link href="/admin/orders">فتح إدارة الطلبات ←</Link></p><div className="admin-stats"><article><small>المنتجات</small><strong>{productsCount ?? 0}</strong></article><article><small>الطلبات</small><strong>{ordersCount ?? 0}</strong></article><article><small>الأقسام</small><strong>{categories.length}</strong></article></div>
+      <p className="admin-order-link"><Link href="/admin/orders">إدارة الطلبات ←</Link>　·　<Link href="/admin/inventory">إدارة المخزون حسب اللون والمقاس ←</Link></p><div className="admin-stats"><article><small>المنتجات</small><strong>{productsCount ?? 0}</strong></article><article><small>الطلبات</small><strong>{ordersCount ?? 0}</strong></article><article><small>الأقسام</small><strong>{categories.length}</strong></article></div>
       {params.created ? <p className="admin-success">تمت إضافة المنتج بنجاح.</p> : null}{params.updated ? <p className="admin-success">تم حفظ تعديلات المنتج.</p> : null}{params.deleted ? <p className="admin-success">تم حذف المنتج.</p> : null}{params.categoryCreated ? <p className="admin-success">تمت إضافة القسم.</p> : null}
       {productsError ? <p className="admin-error">تعذر تحميل المنتجات: {productsError.message}</p> : null}
       {canManageCatalog ? <>
